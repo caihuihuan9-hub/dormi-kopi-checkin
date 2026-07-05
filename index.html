@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dormi Check-in System</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .hidden-view {
+            display: none !important;
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Custom Modal UI (客製化彈窗 - 解決預覽環境阻擋原生彈窗的問題) -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[100]">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-fadeIn">
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Title</h3>
+            <div id="modal-content" class="text-gray-600 mb-6 text-sm">Message</div>
+            <div class="flex justify-end gap-3">
+                <button id="modal-btn-cancel" class="px-4 py-2 rounded font-bold text-gray-500 hover:bg-gray-100 hidden transition">取消 / Cancel</button>
+                <button id="modal-btn-ok" class="px-4 py-2 rounded font-bold bg-[#1B62B2] text-white hover:bg-blue-700 transition">確定 / OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="bg-[#1B62B2] text-white p-4 shadow-md flex justify-between items-center">
+        <div class="flex items-center gap-2 font-bold text-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="nav-title">留學生宿舍 Check-in 預約系統</span>
+        </div>
+        <div class="flex gap-4 items-center">
+            <button id="btn-toggle-view" class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition">
+                管理員後台
+            </button>
+            <button id="btn-toggle-lang" class="flex items-center gap-1 text-sm bg-white text-[#1B62B2] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span id="lang-switch-text">EN</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 mt-4">
+        
+        <!-- ================= STUDENT VIEW ================= -->
+        <div id="view-student" class="">
+            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                
+                <!-- Progress Indicator -->
+                <div id="progress-indicator" class="flex justify-between mb-8 border-b pb-4">
+                    <div id="prog-1" class="flex-1 text-center font-bold text-sm text-[#1B62B2]">Step 1</div>
+                    <div id="prog-2" class="flex-1 text-center font-bold text-sm text-gray-300">Step 2</div>
+                    <div id="prog-3" class="flex-1 text-center font-bold text-sm text-gray-300">Step 3</div>
+                    <div id="prog-4" class="flex-1 text-center font-bold text-sm text-gray-300">Step 4</div>
+                </div>
+
+                <!-- STEP 1: Select Building -->
+                <div id="step-1" class="space-y-6 animate-fadeIn">
+                    <h2 id="t-selectBuilding" class="text-2xl font-bold text-center mb-8">請選擇您的宿舍樓</h2>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <button onclick="selectBuilding('KOPI339')" class="p-8 border-2 border-gray-200 rounded-xl hover:border-[#1B62B2] hover:bg-blue-50 transition flex flex-col items-center gap-4">
+                            <div class="bg-[#1B62B2] text-white p-4 rounded-full"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                            <span class="text-xl font-bold">KOPI339</span>
+                        </button>
+                        <button onclick="selectBuilding('DORMI@Baffin')" class="p-8 border-2 border-gray-200 rounded-xl hover:border-[#1B62B2] hover:bg-blue-50 transition flex flex-col items-center gap-4">
+                            <div class="bg-[#1B62B2] text-white p-4 rounded-full"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                            <span class="text-xl font-bold">DORMI@Baffin</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Verification -->
+                <div id="step-2" class="space-y-4 max-w-lg mx-auto animate-fadeIn hidden-view">
+                    <h2 id="t-verifyTitle" class="text-2xl font-bold text-center mb-6">住客身份驗證</h2>
+                    
+                    <div class="bg-blue-50 text-blue-800 p-3 rounded text-sm mb-4 border border-blue-200">
+                        <p class="font-bold mb-1 border-b border-blue-200 pb-1">💡 <span id="t-testHint">測試數據提示 / Test Hint：</span></p>
+                        <ul id="test-data-list" class="list-disc pl-5 opacity-90">
+                            <!-- JS injected based on building -->
+                        </ul>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label id="t-name" class="font-bold text-gray-700">姓名 Name (與合約一致)</label>
+                        <input id="input-name" type="text" class="w-full p-3 border rounded focus:ring-2 focus:ring-[#1B62B2] outline-none">
+                    </div>
+                    <div class="space-y-2">
+                        <label id="t-floor" class="font-bold text-gray-700">樓層 Floor</label>
+                        <select id="input-floor" class="w-full p-3 border rounded bg-white outline-none">
+                            <!-- Generated by JS -->
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label id="t-unit" class="font-bold text-gray-700">單位 Flat/Unit</label>
+                            <input id="input-unit" type="text" class="w-full p-3 border rounded outline-none">
+                        </div>
+                        <div class="space-y-2">
+                            <label id="t-room" class="font-bold text-gray-700">房間號 Room</label>
+                            <input id="input-room" type="text" class="w-full p-3 border rounded outline-none">
+                        </div>
+                    </div>
+                    
+                    <div id="verify-error" class="text-red-600 bg-red-50 p-3 rounded flex items-center gap-2 hidden-view">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> 
+                        <span id="t-verifyErrorMsg"></span>
+                    </div>
+                    
+                    <div class="flex gap-4 pt-4">
+                        <button onclick="goToStep(1)" class="w-1/3 p-3 border text-gray-600 rounded font-bold hover:bg-gray-100 btn-back">返回</button>
+                        <button onclick="verifyIdentity()" class="w-2/3 p-3 bg-[#1B62B2] text-white rounded font-bold hover:bg-blue-700 transition btn-next">下一步</button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Slot Selection -->
+                <div id="step-3" class="space-y-6 animate-fadeIn hidden-view">
+                    <h2 class="text-xl font-bold"><span id="t-selectSlot">請選擇 Check-in 日期與時間段</span> - <span id="display-building"></span></h2>
+                    
+                    <div id="date-slider" class="flex gap-2 overflow-x-auto pb-4 custom-scrollbar">
+                        <!-- Dates rendered by JS -->
+                    </div>
+
+                    <div id="time-slots" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <!-- Time slots rendered by JS -->
+                    </div>
+                    
+                    <button onclick="goToStep(2)" class="mt-4 text-gray-500 underline btn-back">返回修改</button>
+                </div>
+
+                <!-- STEP 4: Details & Countdown -->
+                <div id="step-4" class="max-w-lg mx-auto animate-fadeIn hidden-view">
+                    <div class="bg-orange-50 border border-orange-200 text-orange-800 p-4 rounded-lg mb-6 flex items-start gap-3">
+                        <svg class="shrink-0 mt-1" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <div>
+                            <p id="t-countdownMsg" class="font-bold">名額已鎖定，請在倒計時結束前完成填寫：</p>
+                            <p id="timer-display" class="text-2xl font-mono mt-2">05:00</p>
+                        </div>
+                    </div>
+                    
+                    <h2 id="t-completeInfo" class="text-xl font-bold mb-4">請完善聯絡資訊</h2>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label id="t-phone" class="font-bold text-gray-700">聯絡電話 Phone Number</label>
+                            <input id="input-phone" type="tel" class="w-full p-3 border rounded outline-none" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label id="t-email" class="font-bold text-gray-700">電子郵箱 Email</label>
+                            <input id="input-email" type="email" class="w-full p-3 border rounded outline-none" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label id="t-luggage" class="font-bold text-gray-700">預估行李數量 (件) Estimated Luggage</label>
+                            <input id="input-luggage" type="number" min="0" class="w-full p-3 border rounded outline-none" required>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 pt-6">
+                        <button onclick="cancelTimerAndGoBack()" class="w-1/3 p-3 border text-gray-600 rounded font-bold hover:bg-gray-100 btn-back">返回</button>
+                        <button onclick="submitFinal()" class="w-2/3 p-3 bg-[#1B62B2] text-white rounded font-bold hover:bg-blue-700 transition btn-submit">確認提交</button>
+                    </div>
+                </div>
+
+                <!-- STEP 5: Success Modal -->
+                <div id="step-5" class="text-center py-10 animate-fadeIn hidden-view">
+                    <svg class="w-20 h-20 text-green-500 mx-auto mb-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <h2 id="t-successTitle" class="text-3xl font-bold text-gray-800 mb-4">預約成功</h2>
+                    
+                    <div class="bg-gray-50 p-6 rounded-lg text-left max-w-md mx-auto mb-6 shadow-inner text-gray-700 border">
+                        <p class="mb-2"><strong id="t-resName">姓名:</strong> <span id="res-name"></span></p>
+                        <p class="mb-2"><strong id="t-resRoom">房間:</strong> <span id="res-room"></span></p>
+                        <p class="mb-2"><strong id="t-resDate">日期:</strong> <span id="res-date"></span></p>
+                        <p class="mb-2"><strong id="t-resTime">時間:</strong> <span id="res-time" class="text-[#1B62B2] font-bold"></span></p>
+                    </div>
+
+                    <div class="max-w-lg mx-auto">
+                        <p id="t-successMsg1" class="font-bold text-gray-800 mb-2 text-lg">您已成功選擇該時間段，請準時在該時段內抵達，所選擇時間不可修改！</p>
+                        
+                        <div id="warning-box" class="bg-[#FA8773]/10 border border-[#FA8773] text-[#FA8773] p-4 rounded-lg my-4 flex gap-2 text-left hidden-view">
+                            <svg class="shrink-0" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span id="t-warningMsg" class="font-bold">溫馨提醒：入住時間在 8.15 及之後，退租時間不會順延，一律在 2027年8月14日 退租。</span>
+                        </div>
+                        
+                        <p id="t-contactSupport" class="text-gray-500 font-bold mt-4">如有疑問請詢問郵箱：dormi888@gmail.com</p>
+                    </div>
+                    
+                    <button onclick="resetToHome()" class="mt-8 px-8 py-3 bg-gray-100 border font-bold rounded-lg text-gray-600 hover:bg-gray-200 transition">
+                        <span id="t-returnHome">返回首頁</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN VIEW ================= -->
+        <div id="view-admin" class="hidden-view">
+            <!-- Admin Login -->
+            <div id="admin-login" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg mt-10">
+                <div class="text-center mb-8">
+                    <div class="bg-gray-800 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <h2 id="t-adminLogin" class="text-2xl font-bold text-gray-800">管理員登入</h2>
+                </div>
+                <div class="space-y-4">
+                    <input id="input-admin-user" type="text" placeholder="帳號" class="w-full p-3 border rounded bg-gray-50 focus:bg-white outline-none">
+                    <input id="input-admin-pass" type="password" placeholder="密碼" class="w-full p-3 border rounded bg-gray-50 focus:bg-white outline-none">
+                    <p id="admin-error" class="text-red-500 text-sm font-bold hidden-view"></p>
+                    <button onclick="handleAdminLogin()" id="btn-admin-login" class="w-full bg-gray-800 text-white font-bold p-3 rounded hover:bg-gray-900 transition">進入後台</button>
+                </div>
+            </div>
+
+            <!-- Admin Dashboard -->
+            <div id="admin-dashboard" class="bg-white rounded-xl shadow-lg p-6 hidden-view">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
+                    <h2 class="text-2xl font-bold flex items-center gap-2">
+                        <svg class="text-[#1B62B2]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span id="t-dashboard">預約總表</span>
+                    </h2>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        <!-- CSV 檔案上傳輸入框 (隱藏) -->
+                        <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+                        
+                        <button onclick="triggerCsvUpload()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 transition">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <span id="t-importCsv">導入名單 (CSV)</span>
+                        </button>
+
+                        <button onclick="exportToExcel()" class="flex items-center gap-2 bg-[#1B62B2] text-white px-4 py-2 rounded font-bold hover:bg-blue-700 transition">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span id="t-exportExcel">導出 Excel</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700">
+                                <th class="p-3 font-bold border-b">Date & Time</th>
+                                <th class="p-3 font-bold border-b">Building & Room</th>
+                                <th class="p-3 font-bold border-b">Student Info</th>
+                                <th class="p-3 font-bold text-right border-b">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                    <p id="admin-no-data" class="text-center py-12 text-gray-500 font-bold hidden-view">暫無任何預約記錄</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- System Data & Translations ---
+        const mockResidentDatabase = [
+            { name: '陈晗玚', building: 'DORMI@Baffin', floor: 'Upper', unit: '4', room: 'D' },
+            { name: '王圆根', building: 'DORMI@Baffin', floor: 'Upper', unit: '6', room: 'C' },
+            { name: '许圣昊', building: 'KOPI339', floor: '7', unit: 'D', room: 'D2' },
+            { name: '蔡增元', building: 'KOPI339', floor: '6', unit: 'C', room: 'C3' },
+            { name: '张峻鸣', building: 'DORMI@Baffin', floor: 'Lower', unit: '6', room: 'D' }
+        ];
+
+        const translations = {
+            zh: {
+                title: '留學生宿舍 Check-in 預約系統',
+                studentView: '學生預約',
+                adminView: '管理員後台',
+                selectBuilding: '請選擇您的宿舍樓',
+                verifyTitle: '住客身份驗證',
+                name: '姓名 Name (與合約一致)',
+                floor: '樓層 Floor',
+                unit: '單位 Flat/Unit',
+                room: '房間號 Room',
+                selectFloor: '請選擇樓層',
+                verifyErrorMsg: '驗證失敗：找不到匹配的住客資料，請檢查您的輸入（請注意樓層、單位與房間號需精準對應）。',
+                selectSlot: '請選擇 Check-in 日期與時間段',
+                completeInfo: '請完善聯絡資訊',
+                countdownMsg: '名額已鎖定，請在倒計時結束前完成填寫：',
+                phone: '聯絡電話 Phone Number',
+                email: '電子郵箱 Email',
+                luggage: '預估行李數量 (件) Estimated Luggage',
+                successTitle: '預約成功',
+                resName: '姓名:',
+                resRoom: '房間:',
+                resDate: '日期:',
+                resTime: '時間:',
+                successMsg1: '您已成功選擇該時間段，請準時在該時段內抵達，所選擇時間不可修改！',
+                warningMsg: '溫馨提醒：入住時間在 8.15 及之後，退租時間不會順延，一律在 2027年8月14日 退租。',
+                contactSupport: '如有疑問請詢問郵箱：dormi888@gmail.com',
+                adminLogin: '管理員登入',
+                dashboard: '預約總表',
+                exportExcel: '導出 Excel',
+                importCsv: '導入名單 (CSV)',
+                noBookings: '暫無任何預約記錄',
+                returnHome: '返回首頁',
+                btnBack: '返回修改',
+                btnNext: '下一步',
+                btnSubmit: '確認提交',
+                available: '可選',
+                full: '已滿',
+                remaining: '剩餘',
+                testHintKopi: '<li>许圣昊, 7樓, D, D2</li><li>蔡增元, 6樓, C, C3</li>',
+                testHintDormi: '<li>陈晗玚, Upper樓層, 4, D</li><li>王圆根, Upper樓層, 6, C</li>',
+                timeoutMsg: '超時！您的保留名額已自動釋放，請重新選擇時間。',
+                loginError: '帳號或密碼錯誤'
+            },
+            en: {
+                title: 'Student Dorm Check-in System',
+                studentView: 'Student Booking',
+                adminView: 'Admin Portal',
+                selectBuilding: 'Select Your Dormitory',
+                verifyTitle: 'Resident Identity Verification',
+                name: 'Full Name (As per contract)',
+                floor: 'Floor',
+                unit: 'Flat/Unit',
+                room: 'Room Number',
+                selectFloor: 'Select Floor',
+                verifyErrorMsg: 'Verification failed: No matching record found. Please check your details carefully.',
+                selectSlot: 'Select Check-in Date & Time',
+                completeInfo: 'Complete Contact Info',
+                countdownMsg: 'Slot locked. Please complete the form before time expires:',
+                phone: 'Phone Number',
+                email: 'Email Address',
+                luggage: 'Estimated Luggage (Pieces)',
+                successTitle: 'Booking Successful',
+                resName: 'Name:',
+                resRoom: 'Room:',
+                resDate: 'Date:',
+                resTime: 'Time:',
+                successMsg1: 'You have successfully booked this time slot. Please arrive on time. The selected time cannot be modified!',
+                warningMsg: 'Reminder: For check-ins on or after Aug 15, the lease end date will not be extended. All leases end strictly on Aug 14, 2027.',
+                contactSupport: 'Inquiries: dormi888@gmail.com',
+                adminLogin: 'Administrator Login',
+                dashboard: 'Master Schedule',
+                exportExcel: 'Export Excel',
+                importCsv: 'Import CSV',
+                noBookings: 'No bookings found.',
+                returnHome: 'Return Home',
+                btnBack: 'Go Back',
+                btnNext: 'Next Step',
+                btnSubmit: 'Submit',
+                available: 'Available',
+                full: 'Full',
+                remaining: 'Left',
+                testHintKopi: '<li>许圣昊, Floor 7, D, D2</li><li>蔡增元, Floor 6, C, C3</li>',
+                testHintDormi: '<li>陈晗玚, Floor Upper, 4, D</li><li>王圆根, Floor Upper, 6, C</li>',
+                timeoutMsg: 'Timeout! Your reserved slot has been released. Please reselect.',
+                loginError: 'Invalid credentials'
+            }
+        };
+
+        const ALL_DATES = Array.from({ length: 31 }, (_, i) => {
+            const day = (i + 1).toString().padStart(2, '0');
+            return { full: `2026-08-${day}`, display: `08-${day}` };
+        });
+
+        const TIME_SLOTS = [
+            '10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00', '13:00 - 14:00',
+            '14:00 - 15:00', '15:00 - 16:00', '16:00 - 17:00', '17:00 - 18:00'
+        ];
+
+        // --- Application State ---
+        let state = {
+            lang: 'zh',
+            view: 'student', 
+            step: 1,
+            formData: {
+                buildingId: '', buildingLabel: '', floor: '', unit: '', room: '', name: '',
+                date: '2026-08-01', time: '', phone: '', email: '', luggage: ''
+            },
+            // 在這裡加入幾筆預設的假訂單，確保第一次登入後台不會是空的
+            bookings: [
+                { id: 'BKG-000001', building: 'KOPI339', date: '2026-08-01', time: '10:00 - 11:00', name: '许圣昊', room: '7-D-D2', phone: '0912345678', email: 'test1@gmail.com', luggage: '2' },
+                { id: 'BKG-000002', building: 'DORMI@Baffin', date: '2026-08-15', time: '14:00 - 15:00', name: '张峻鸣', room: 'Lower-6-D', phone: '0987654321', email: 'test2@gmail.com', luggage: '1' }
+            ], 
+            timeLeft: 300,
+            timerInterval: null
+        };
+
+        // --- DOM Elements ---
+        const els = {
+            viewStudent: document.getElementById('view-student'),
+            viewAdmin: document.getElementById('view-admin'),
+            adminLogin: document.getElementById('admin-login'),
+            adminDash: document.getElementById('admin-dashboard'),
+            progress: document.getElementById('progress-indicator'),
+            steps: [null, document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3'), document.getElementById('step-4'), document.getElementById('step-5')],
+            btnLang: document.getElementById('btn-toggle-lang'),
+            btnView: document.getElementById('btn-toggle-view'),
+            testDataList: document.getElementById('test-data-list'),
+            dateSlider: document.getElementById('date-slider'),
+            timeSlots: document.getElementById('time-slots'),
+            timerDisplay: document.getElementById('timer-display'),
+            errorBox: document.getElementById('verify-error'),
+            adminError: document.getElementById('admin-error'),
+            modal: document.getElementById('custom-modal'),
+            modalTitle: document.getElementById('modal-title'),
+            modalContent: document.getElementById('modal-content'),
+            modalBtnCancel: document.getElementById('modal-btn-cancel'),
+            modalBtnOk: document.getElementById('modal-btn-ok'),
+            csvInput: document.getElementById('csv-file-input')
+        };
+
+        // --- LocalStorage Persistence (數據保存邏輯) ---
+        function loadSavedData() {
+            try {
+                const storedBookings = localStorage.getItem('dormi_bookings');
+                // 如果本地有暫存，才覆蓋預設資料
+                if (storedBookings) {
+                    const parsed = JSON.parse(storedBookings);
+                    if (parsed && parsed.length > 0) {
+                        state.bookings = parsed;
+                    }
+                }
+
+                const storedDB = localStorage.getItem('dormi_db');
+                if (storedDB) {
+                    const parsedDB = JSON.parse(storedDB);
+                    if (parsedDB && parsedDB.length > 0) {
+                        mockResidentDatabase.length = 0;
+                        mockResidentDatabase.push(...parsedDB);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load local data", e);
+            }
+        }
+
+        function saveBookingsToLocal() {
+            try {
+                localStorage.setItem('dormi_bookings', JSON.stringify(state.bookings));
+            } catch (e) {
+                console.error("Failed to save bookings", e);
+            }
+        }
+
+        function saveDBToLocal() {
+            try {
+                localStorage.setItem('dormi_db', JSON.stringify(mockResidentDatabase));
+            } catch (e) {
+                console.error("Failed to save DB", e);
+            }
+        }
+
+        // --- Custom Modal Logic ---
+        let modalConfirmCallback = null;
+
+        function showModal(title, content, type = 'alert', onConfirm = null) {
+            els.modalTitle.innerText = title;
+            els.modalContent.innerHTML = content;
+            
+            if (type === 'confirm') {
+                els.modalBtnCancel.classList.remove('hidden');
+            } else {
+                els.modalBtnCancel.classList.add('hidden');
+            }
+            
+            modalConfirmCallback = onConfirm;
+            els.modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            els.modal.classList.add('hidden');
+            modalConfirmCallback = null;
+        }
+
+        els.modalBtnCancel.onclick = closeModal;
+        els.modalBtnOk.onclick = () => {
+            if (modalConfirmCallback) modalConfirmCallback();
+            closeModal();
+        };
+
+        // --- Initialization ---
+        function init() {
+            loadSavedData();
+            updateI18n();
+            els.btnLang.addEventListener('click', toggleLang);
+            els.btnView.addEventListener('click', toggleView);
+        }
+
+        // --- Logic: Navigation & Language ---
+        function toggleLang() {
+            state.lang = state.lang === 'zh' ? 'en' : 'zh';
+            document.getElementById('lang-switch-text').innerText = state.lang === 'zh' ? 'EN' : '中';
+            updateI18n();
+            if(state.step === 3) renderDatesAndSlots();
+        }
+
+        function toggleView() {
+            if (state.view === 'student') {
+                state.view = 'admin';
+                els.viewStudent.classList.add('hidden-view');
+                els.viewAdmin.classList.remove('hidden-view');
+                els.btnView.innerText = translations[state.lang].studentView;
+            } else {
+                state.view = 'student';
+                els.viewAdmin.classList.add('hidden-view');
+                els.viewStudent.classList.remove('hidden-view');
+                els.btnView.innerText = translations[state.lang].adminView;
+            }
+        }
+
+        function updateI18n() {
+            const t = translations[state.lang];
+            const ids = ['nav-title', 't-selectBuilding', 't-verifyTitle', 't-name', 't-floor', 't-unit', 't-room', 't-verifyErrorMsg', 't-selectSlot', 't-completeInfo', 't-countdownMsg', 't-phone', 't-email', 't-luggage', 't-successTitle', 't-resName', 't-resRoom', 't-resDate', 't-resTime', 't-successMsg1', 't-warningMsg', 't-contactSupport', 't-adminLogin', 't-dashboard', 't-exportExcel', 't-importCsv', 't-returnHome'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if(el && t[id.replace('t-', '')]) el.innerText = t[id.replace('t-', '')];
+            });
+            
+            document.querySelectorAll('.btn-back').forEach(el => el.innerText = t.btnBack);
+            document.querySelectorAll('.btn-next').forEach(el => el.innerText = t.btnNext);
+            document.querySelectorAll('.btn-submit').forEach(el => el.innerText = t.btnSubmit);
+
+            document.getElementById('input-admin-user').placeholder = state.lang === 'zh' ? '帳號' : 'Username';
+            document.getElementById('input-admin-pass').placeholder = state.lang === 'zh' ? '密碼' : 'Password';
+            document.getElementById('btn-admin-login').innerText = state.lang === 'zh' ? '進入後台' : 'Login';
+            
+            if (state.step === 2) updateTestHints();
+        }
+
+        function goToStep(num) {
+            for(let i=1; i<=5; i++) els.steps[i].classList.add('hidden-view');
+            els.steps[num].classList.remove('hidden-view');
+            state.step = num;
+
+            if(num < 5) {
+                els.progress.classList.remove('hidden-view');
+                for(let i=1; i<=4; i++) {
+                    const p = document.getElementById('prog-' + i);
+                    if(i <= num) { p.className = 'flex-1 text-center font-bold text-sm text-[#1B62B2]'; }
+                    else { p.className = 'flex-1 text-center font-bold text-sm text-gray-300'; }
+                }
+            } else {
+                els.progress.classList.add('hidden-view');
+            }
+        }
+
+        function resetToHome() {
+            state.formData = {
+                buildingId: '', buildingLabel: '', floor: '', unit: '', room: '', name: '',
+                date: '2026-08-01', time: '', phone: '', email: '', luggage: ''
+            };
+            document.getElementById('input-name').value = '';
+            document.getElementById('input-floor').value = '';
+            document.getElementById('input-unit').value = '';
+            document.getElementById('input-room').value = '';
+            document.getElementById('input-phone').value = '';
+            document.getElementById('input-email').value = '';
+            document.getElementById('input-luggage').value = '';
+            goToStep(1);
+        }
+
+        // --- Logic: Student Flow ---
+        function selectBuilding(buildingId) {
+            state.formData.buildingId = buildingId;
+            state.formData.buildingLabel = buildingId === 'KOPI339' ? (state.lang === 'zh' ? 'KOPI339 宿舍' : 'KOPI339 Dormitory') : (state.lang === 'zh' ? 'DORMI@巴芬道 宿舍' : 'DORMI@Baffin Dormitory');
+            els.errorBox.classList.add('hidden-view');
+            
+            const floorSelect = document.getElementById('input-floor');
+            floorSelect.innerHTML = `<option value="">${translations[state.lang].selectFloor}</option>`;
+            const options = buildingId === 'KOPI339' ? ['1', '2', '3', '4', '5', '6', '7', '8'] : ['Upper', 'Middle', 'Lower'];
+            options.forEach(opt => { floorSelect.innerHTML += `<option value="${opt}">${opt}</option>`; });
+            
+            document.getElementById('input-unit').placeholder = buildingId === 'KOPI339' ? "e.g. C" : "e.g. 4";
+            document.getElementById('input-room').placeholder = buildingId === 'KOPI339' ? "e.g. C3" : "e.g. D";
+
+            updateTestHints();
+            goToStep(2);
+        }
+
+        function updateTestHints() {
+            els.testDataList.innerHTML = state.formData.buildingId === 'KOPI339' 
+                ? translations[state.lang].testHintKopi 
+                : translations[state.lang].testHintDormi;
+            document.getElementById('display-building').innerText = state.formData.buildingLabel;
+        }
+
+        function verifyIdentity() {
+            state.formData.name = document.getElementById('input-name').value;
+            state.formData.floor = document.getElementById('input-floor').value;
+            state.formData.unit = document.getElementById('input-unit').value;
+            state.formData.room = document.getElementById('input-room').value;
+
+            const match = mockResidentDatabase.find(r => 
+                r.name.trim().toLowerCase() === state.formData.name.trim().toLowerCase() &&
+                r.building === state.formData.buildingId &&
+                r.floor === state.formData.floor &&
+                r.unit.trim().toLowerCase() === state.formData.unit.trim().toLowerCase() &&
+                r.room.trim().toLowerCase() === state.formData.room.trim().toLowerCase()
+            );
+
+            if (match) {
+                els.errorBox.classList.add('hidden-view');
+                goToStep(3);
+                renderDatesAndSlots();
+            } else {
+                els.errorBox.classList.remove('hidden-view');
+            }
+        }
+
+        function renderDatesAndSlots() {
+            els.dateSlider.innerHTML = '';
+            ALL_DATES.forEach(dateObj => {
+                const isSelected = state.formData.date === dateObj.full;
+                const classes = isSelected 
+                    ? 'min-w-[80px] p-2 border rounded-lg text-center font-bold transition bg-[#1B62B2] text-white border-[#1B62B2]'
+                    : 'min-w-[80px] p-2 border rounded-lg text-center font-bold transition hover:bg-blue-50 focus:bg-blue-50';
+                
+                const btn = document.createElement('button');
+                btn.className = classes;
+                btn.innerText = dateObj.display;
+                btn.onclick = () => {
+                    state.formData.date = dateObj.full;
+                    renderDatesAndSlots(); 
+                };
+                els.dateSlider.appendChild(btn);
+            });
+
+            els.timeSlots.innerHTML = '';
+            const t = translations[state.lang];
+            TIME_SLOTS.forEach((slot, idx) => {
+                const bookedCount = state.bookings.filter(b => b.building === state.formData.buildingId && b.date === state.formData.date && b.time === slot).length;
+                const isFull = bookedCount >= 5;
+                
+                const btnClasses = isFull 
+                    ? 'p-4 border rounded-xl flex flex-col items-center transition bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'p-4 border rounded-xl flex flex-col items-center transition hover:border-[#1B62B2] hover:shadow-md bg-white';
+                
+                const badgeClasses = isFull ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700';
+                const badgeText = isFull ? t.full : `${t.remaining} ${5 - bookedCount}/5`;
+
+                const btn = document.createElement('button');
+                btn.className = btnClasses;
+                btn.disabled = isFull;
+                btn.onclick = () => lockSlot(slot);
+                btn.innerHTML = `
+                    <span class="font-bold text-lg mb-2">${slot}</span>
+                    <div class="px-4 py-1 rounded-full text-sm font-bold w-full ${badgeClasses}">${badgeText}</div>
+                `;
+                els.timeSlots.appendChild(btn);
+            });
+        }
+
+        function lockSlot(time) {
+            state.formData.time = time;
+            state.timeLeft = 300; // 5 mins
+            goToStep(4);
+            startTimer();
+        }
+
+        function startTimer() {
+            if(state.timerInterval) clearInterval(state.timerInterval);
+            updateTimerDisplay();
+            
+            state.timerInterval = setInterval(() => {
+                state.timeLeft--;
+                updateTimerDisplay();
+                if(state.timeLeft <= 0) {
+                    clearInterval(state.timerInterval);
+                    showModal('提示 / Notice', translations[state.lang].timeoutMsg);
+                    goToStep(3);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(state.timeLeft / 60);
+            const s = state.timeLeft % 60;
+            els.timerDisplay.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function cancelTimerAndGoBack() {
+            if(state.timerInterval) clearInterval(state.timerInterval);
+            goToStep(3);
+        }
+
+        function submitFinal() {
+            const phone = document.getElementById('input-phone').value;
+            const email = document.getElementById('input-email').value;
+            const luggage = document.getElementById('input-luggage').value;
+
+            if(!phone || !email || !luggage) {
+                showModal('提示 / Notice', "Please complete all fields. / 請填寫所有信息。");
+                return;
+            }
+
+            if(state.timerInterval) clearInterval(state.timerInterval);
+
+            state.formData.phone = phone;
+            state.formData.email = email;
+            state.formData.luggage = luggage;
+
+            const newBooking = {
+                id: 'BKG-' + Date.now().toString().slice(-6),
+                building: state.formData.buildingId,
+                date: state.formData.date,
+                time: state.formData.time,
+                name: state.formData.name,
+                room: `${state.formData.floor}-${state.formData.unit}-${state.formData.room}`,
+                phone: phone,
+                email: email,
+                luggage: luggage
+            };
+            
+            state.bookings.push(newBooking);
+            saveBookingsToLocal(); // 保存數據至本地
+
+            document.getElementById('res-name').innerText = state.formData.name;
+            document.getElementById('res-room').innerText = `${state.formData.buildingId} ${newBooking.room}`;
+            document.getElementById('res-date').innerText = state.formData.date;
+            document.getElementById('res-time').innerText = state.formData.time;
+
+            const isWarningDate = parseInt(state.formData.date.split('-')[2], 10) >= 16;
+            if (isWarningDate) {
+                document.getElementById('warning-box').classList.remove('hidden-view');
+            } else {
+                document.getElementById('warning-box').classList.add('hidden-view');
+            }
+
+            goToStep(5);
+        }
+
+        // --- Logic: Admin Flow ---
+        function handleAdminLogin() {
+            const u = document.getElementById('input-admin-user').value;
+            const p = document.getElementById('input-admin-pass').value;
+            
+            if (u === 'dormi666' && p === 'dormi888') {
+                els.adminError.classList.add('hidden-view');
+                els.adminLogin.classList.add('hidden-view');
+                els.adminDash.classList.remove('hidden-view');
+                renderAdminTable();
+            } else {
+                els.adminError.innerText = translations[state.lang].loginError;
+                els.adminError.classList.remove('hidden-view');
+            }
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-table-body');
+            const noData = document.getElementById('admin-no-data');
+            
+            tbody.innerHTML = '';
+            if(state.bookings.length === 0) {
+                noData.innerText = translations[state.lang].noBookings;
+                noData.classList.remove('hidden-view');
+                return;
+            }
+            
+            noData.classList.add('hidden-view');
+            
+            // 安全拷貝並排序，不污染原始狀態
+            const sorted = [...state.bookings].sort((a,b) => {
+                if(a.date === b.date) return a.time.localeCompare(b.time);
+                return a.date.localeCompare(b.date);
+            });
+            
+            sorted.forEach(b => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <div class="font-bold">${b.date}</div>
+                        <div class="text-sm text-[#1B62B2] font-bold">${b.time}</div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-bold">${b.building}</div>
+                        <div class="text-sm text-gray-500">${b.room}</div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-bold">${b.name}</div>
+                        <div class="text-sm text-gray-500">Ph: ${b.phone || 'N/A'} | Luggage: ${b.luggage || 'N/A'}</div>
+                    </td>
+                    <td class="p-3 text-right space-x-3">
+                        <button onclick="modifyBooking('${b.id}')" class="text-sm text-blue-600 font-bold hover:underline">修改預訂</button>
+                        <button onclick="cancelBooking('${b.id}')" class="text-sm text-red-600 font-bold hover:underline">取消預訂</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function modifyBooking(id) {
+            const booking = state.bookings.find(b => b.id === id);
+            if(!booking) return;
+
+            let dateOptions = ALL_DATES.map(d => `<option value="${d.full}" ${d.full===booking.date?'selected':''}>${d.full}</option>`).join('');
+            let timeOptions = TIME_SLOTS.map(t => `<option value="${t}" ${t===booking.time?'selected':''}>${t}</option>`).join('');
+
+            const content = `
+                <div class="space-y-3 mt-2 text-left">
+                    <p class="font-bold text-sm text-[#1B62B2] border-b pb-2">${booking.name} (${booking.room})</p>
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-gray-700">新日期 / New Date</label>
+                        <select id="edit-date" class="w-full p-2 border rounded outline-none bg-white">${dateOptions}</select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-gray-700">新時間 / New Time</label>
+                        <select id="edit-time" class="w-full p-2 border rounded outline-none bg-white">${timeOptions}</select>
+                    </div>
+                </div>
+            `;
+
+            showModal('修改預訂 / Modify Booking', content, 'confirm', () => {
+                booking.date = document.getElementById('edit-date').value;
+                booking.time = document.getElementById('edit-time').value;
+                saveBookingsToLocal(); // 更新數據後保存
+                renderAdminTable();
+            });
+        }
+
+        function cancelBooking(id) {
+            showModal('取消預訂 / Cancel Booking', '確定要取消該學生的預約並釋放名額嗎？<br><br>Confirm Cancellation?', 'confirm', () => {
+                state.bookings = state.bookings.filter(b => b.id !== id);
+                saveBookingsToLocal(); // 刪除數據後保存
+                renderAdminTable();
+            });
+        }
+
+        function exportToExcel() {
+            if (state.bookings.length === 0) return showModal('提示 / Notice', '暫無數據可導出 / No data to export!');
+
+            const sorted = [...state.bookings].sort((a, b) => {
+                if (a.date === b.date) return a.time.localeCompare(b.time);
+                return a.date.localeCompare(b.date);
+            });
+            
+            const headers = '日期 (Date),時間 (Time),樓宇 (Building),房間號 (Room),姓名 (Name),電話 (Phone),郵箱 (Email),行李數 (Luggage)\n';
+            const rows = sorted.map(b => `${b.date},${b.time},${b.building},${b.room},${b.name},${b.phone},${b.email},${b.luggage}`).join('\n');
+            const csvContent = "\uFEFF" + headers + rows; 
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Dormi_Checkin_Schedule.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Logic: Import CSV ---
+        function triggerCsvUpload() {
+            els.csvInput.click();
+        }
+
+        els.csvInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                parseAndImportCSV(evt.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        function parseAndImportCSV(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) {
+                showModal('錯誤 / Error', 'CSV 檔案格式錯誤或為空。');
+                return;
+            }
+
+            const newDb = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+                if (cols.length >= 8) {
+                    const name = cols[1];
+                    let buildingRaw = cols[4];
+                    const floor = cols[5];
+                    const unit = cols[6];
+                    const room = cols[7];
+
+                    if (!name) continue;
+
+                    let building = buildingRaw;
+                    if (buildingRaw.toLowerCase() === 'kopi339') building = 'KOPI339';
+                    if (buildingRaw.toLowerCase() === 'belfran') building = 'DORMI@Baffin';
+
+                    newDb.push({ name, building, floor, unit, room });
+                }
+            }
+
+            if (newDb.length > 0) {
+                mockResidentDatabase.length = 0;
+                mockResidentDatabase.push(...newDb);
+                saveDBToLocal();
+                
+                showModal('導入成功 / Success', `成功解析並導入 <b>${newDb.length}</b> 筆學生驗證資料！<br>The database has been updated.`);
+                els.csvInput.value = ''; 
+            } else {
+                showModal('錯誤 / Error', '未能解析出有效的學生資料，請確認欄位格式是否相符。');
+            }
+        }
+
+        // Run Init
+        window.onload = init;
+    </script>
+</body>
+</html>
